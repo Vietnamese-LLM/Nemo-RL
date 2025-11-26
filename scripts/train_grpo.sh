@@ -29,13 +29,13 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
 
 # === 6. Submit ===
 sbatch \
-    --nodes=${NUM_ACTOR_NODES} \
-    --account=${SLURM_ACCOUNT} \
-    --job-name=${JOB_NAME} \
-    --partition=${SLURM_PARTITION} \
-    --exclusive \
-    --mem=0 \
-    --time=4:0:0 \
-    --gres=gpu:8 \
-    --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
-    ray.sub
+        --nodes=${NUM_ACTOR_NODES} \
+        --account=${SLURM_ACCOUNT} \
+        --job-name=${JOB_NAME} \
+        --partition=${SLURM_PARTITION} \
+        --exclusive \
+        --mem=0 \
+        --time=4:0:0 \
+        --gres=gpu:8 \
+        --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
+        ray.sub
