@@ -9,11 +9,14 @@ CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 # === 2. Environment Variables ===
 export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
+echo "HF_TOKEN: $HF_TOKEN"
+echo "WANDB_API_KEY: $WANDB_API_KEY"
 
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
 mkdir -p $HF_CACHE_DIR
 MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
+echo "MOUNTS: $MOUNTS"
 
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
@@ -24,6 +27,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
         checkpointing.checkpoint_dir='results/llama8b_${NUM_ACTOR_NODES}nodes' \
         logger.wandb_enabled=True \
         logger.wandb.name='${JOB_NAME}'"
+echo "COMMAND: $COMMAND"
 
 # === 5. Submit ===
 sbatch \
