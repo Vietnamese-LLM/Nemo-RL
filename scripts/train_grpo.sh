@@ -1,23 +1,21 @@
-# === 1. Slurm ===
+# === 1. Slurm Parameters ===
 SLURM_ACCOUNT="root" 
 SLURM_PARTITION="main" 
-
+TARGET_NODES="worker-1,worker-2"
 NUM_ACTOR_NODES=2
 JOB_NAME="grpo-llama8b-2nodes"
-
-# === 2. Docker ===
 CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 
-# === 3. Env Variables ===
+# === 2. Environment Variables ===
 export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
 
-# === 4. Mount Disk ===
+# === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
 mkdir -p $HF_CACHE_DIR
 MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
 
-# === 5. Command ===
+# === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
         export WANDB_API_KEY=$WANDB_API_KEY && \
         uv run ./examples/run_grpo_math.py \
@@ -27,7 +25,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
         logger.wandb_enabled=True \
         logger.wandb.name='${JOB_NAME}'"
 
-# === 6. Submit ===
+# === 5. Submit ===
 sbatch \
         --nodes=${NUM_ACTOR_NODES} \
         --account=${SLURM_ACCOUNT} \
