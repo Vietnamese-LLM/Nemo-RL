@@ -48,7 +48,12 @@ maybe_gres_arg() {
 # User defined variables
 ########################################################
 CONTAINER=$CONTAINER
-MOUNTS=$MOUNTS
+
+SHARED_RAY_DIR="/tmp/ray_shared/$SLURM_JOB_ID"
+mkdir -p "$SHARED_RAY_DIR"
+MOUNTS="${MOUNTS},${SHARED_RAY_DIR}:/tmp/ray"
+
+# MOUNTS=$MOUNTS
 COMMAND=${COMMAND:-}  # This is a script relative to the SLURM_SUBMIT_DIR. If left empty, it will leave the cluster idle after it's brought up.
 ########################################################
 # Ports for all nodes (should be odd numbers since we place head/worker[0] on the same node) so all workers get the odd ports, but the head will get +1 the ports
