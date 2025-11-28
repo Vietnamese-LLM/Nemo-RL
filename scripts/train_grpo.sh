@@ -24,7 +24,7 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
 	uv run ./examples/run_grpo_math.py \
-    --config examples/configs/grpo_math_8B.yaml \
+    --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
     checkpointing.checkpoint_dir='results/llama8b_${NUM_ACTOR_NODES}nodes' \
     logger.wandb_enabled=True \
