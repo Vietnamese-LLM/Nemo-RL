@@ -3,7 +3,7 @@ defaults: "grpo_math_1B.yaml"
 
 grpo:
   num_prompts_per_step: 64
-  num_generations_per_prompt: 32
+  num_generations_per_prompt: 16
   async_grpo:
     enabled: false
     max_trajectory_age_steps: 1
