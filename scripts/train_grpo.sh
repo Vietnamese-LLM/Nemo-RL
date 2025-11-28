@@ -43,6 +43,6 @@ sbatch \
         --exclusive \
         --mem=0 \
         --time=4:0:0 \
-        --gres=gpu:16 \
+        --gres=gpu:8 \
         --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
         ray.sub
