@@ -11,6 +11,8 @@ grpo:
 # Turn off checkpointing for Debugging
 checkpointing:
   enabled: false
+  higher_is_better: true  # Required field
+  save_period: 100  # Required field
 
 policy:
   model_name: "meta-llama/Llama-3.1-8B-Instruct"
