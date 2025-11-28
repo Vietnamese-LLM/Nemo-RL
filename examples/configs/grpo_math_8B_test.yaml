@@ -13,9 +13,9 @@ policy:
   tokenizer:
     name: ${policy.model_name} ## specify if you'd like to use a tokenizer different from the model's default
   train_global_batch_size: 512
-  train_micro_batch_size: 16
+  train_micro_batch_size: 8
   generation_batch_size: 32 # Only used when generating using HF backend
-  logprob_batch_size: 16
+  logprob_batch_size: 4
   max_total_sequence_length: 4096
   precision: "bfloat16"
 
@@ -53,7 +53,7 @@ policy:
     stop_strings: null
     vllm_cfg:
       tensor_parallel_size: 1
-      gpu_memory_utilization: 0.7
+      gpu_memory_utilization: 0.6
       max_model_len: ${policy.max_total_sequence_length}
       enforce_eager: False
 
