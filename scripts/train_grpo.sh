@@ -6,7 +6,7 @@ set -eoux pipefail
 # === 1. Slurm Parameters ===
 SLURM_ACCOUNT="root"
 SLURM_PARTITION="main"
-JOB_NAME="grpo-llama8b-2nodes"
+JOB_NAME="grpo-llama8b-2nodes-init"
 CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 
 # === 2. Environment Variables ===
