@@ -49,6 +49,7 @@ maybe_gres_arg() {
 ########################################################
 CONTAINER=$CONTAINER
 
+# Create a shared directory on all nodes for Ray to use
 SHARED_RAY_DIR="/tmp/ray_shared/$SLURM_JOB_ID"
 echo "Creating shared directory on all nodes: $SHARED_RAY_DIR"
 srun --ntasks=$SLURM_JOB_NUM_NODES --ntasks-per-node=1 --overlap mkdir -p "$SHARED_RAY_DIR"
