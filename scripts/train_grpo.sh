@@ -12,7 +12,6 @@ CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 # === 2. Environment Variables ===
 export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
-export TARGET_NODES=${TARGET_NODES}
 export NUM_ACTOR_NODES=${NUM_ACTOR_NODES}
 
 # === 3. Mount Disk ===
@@ -54,7 +53,6 @@ fi
 
 echo "[+] Slurm Account: ${SLURM_ACCOUNT}"
 echo "[+] Slurm Partition: ${SLURM_PARTITION}"
-echo "[+] Target Nodes: ${TARGET_NODES}"
 echo "[+] Number of Actor Nodes: ${NUM_ACTOR_NODES}"
 echo "[+] Container Image: ${CONTAINER_IMAGE}"
 echo "[+] HF_TOKEN: ${HF_TOKEN}"
