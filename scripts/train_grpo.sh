@@ -42,7 +42,7 @@ sbatch \
         --partition=${SLURM_PARTITION} \
         --exclusive \
         --mem=0 \
-        --time=4:0:0 \
+        --time=1:0:0 \
         --gres=gpu:8 \
         --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
         ray.sub
