@@ -32,10 +32,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export NCCL_NET_GDR_LEVEL=5 && \
     export NCCL_IB_TIMEOUT=22 && \
     export NCCL_IB_RETRY_CNT=7 && \
-    IB_INTERFACE=$(ip link show 2>/dev/null | grep -o "ib[0-9]" | head -1) && \
-    if [ -n "$IB_INTERFACE" ]; then \
-        export NCCL_SOCKET_IFNAME=$IB_INTERFACE && \
-    fi && \
+    export NCCL_SOCKET_IFNAME='^lo,docker0' && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
