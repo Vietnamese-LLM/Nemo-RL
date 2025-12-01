@@ -24,7 +24,6 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
-    export NCCL_IB_HCA=mlx5 && \
     export NCCL_DEBUG=INFO && \
     export VLLM_NCCL_SO_PATH="" && \
     export NCCL_IB_DISABLE=0 && \
