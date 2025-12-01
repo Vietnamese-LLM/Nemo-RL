@@ -27,6 +27,10 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export NCCL_DEBUG=INFO && \
     export NCCL_IB_DISABLE=0 && \
     export NCCL_IB_HCA='mlx5_0,mlx5_1,mlx5_2,mlx5_3,mlx5_6,mlx5_7,mlx5_8,mlx5_9' && \
+    export NCCL_IB_GID_INDEX=3 && \
+    export NCCL_NET_GDR_LEVEL=5 && \
+    export NCCL_IB_TIMEOUT=22 && \
+    export NCCL_IB_RETRY_CNT=7 && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
