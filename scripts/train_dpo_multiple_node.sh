@@ -19,7 +19,7 @@ JOB_NAME="dpo-multiple-node-${NUM_ACTOR_NODES}"
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
 mkdir -p $HF_CACHE_DIR
-MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
+MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
@@ -28,6 +28,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     policy.model_name="meta-llama/Llama-3.1-8B-Instruct" \
     policy.precision="bfloat16" \
     policy.train_global_batch_size=256 \
+    checkpointing.checkpoint_dir='results/${JOB_NAME}' \
     cluster.gpus_per_node=8 \
     logger.wandb_enabled=True \
     logger.wandb.name='${JOB_NAME}'"
