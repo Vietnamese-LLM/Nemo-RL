@@ -6,7 +6,6 @@ set -eoux pipefail
 # === 1. Slurm Parameters ===
 SLURM_ACCOUNT="root"
 SLURM_PARTITION="main"
-JOB_NAME="grpo-debug"
 CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 
 # === 2. Environment Variables ===
@@ -14,6 +13,8 @@ export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
 export NUM_ACTOR_NODES=${NUM_ACTOR_NODES}
 export TARGET_NODES=${TARGET_NODES}
+
+JOB_NAME="grpo-multiple-node-${NUM_ACTOR_NODES}"
 
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"

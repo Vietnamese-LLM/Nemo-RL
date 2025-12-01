@@ -6,14 +6,15 @@ set -eoux pipefail
 # === 1. Slurm Parameters ===
 SLURM_ACCOUNT="root"
 SLURM_PARTITION="main"
-JOB_NAME="grpo-single-node"
 CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 
 # === 2. Environment Variables ===
 export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
 export NUM_ACTOR_NODES=1
-export TARGET_NODES='worker-3'
+export TARGET_NODES=${TARGET_NODES}
+
+JOB_NAME="dpo-multiple-node-${NUM_ACTOR_NODES}"
 
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
@@ -23,10 +24,10 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
-	uv run ./examples/run_grpo_math.py \
-    --config examples/configs/grpo_math_8B_test.yaml \
-    cluster.num_nodes=${NUM_ACTOR_NODES} \
-    checkpointing.checkpoint_dir='results/llama8b_${NUM_ACTOR_NODES}nodes' \
+    uv run python examples/run_dpo.py \
+    policy.model_name="meta-llama/Llama-3.1-8B-Instruct" \
+    policy.train_global_batch_size=256 \
+    cluster.gpus_per_node=8 \
     logger.wandb_enabled=True \
     logger.wandb.name='${JOB_NAME}'"
 
