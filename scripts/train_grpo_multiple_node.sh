@@ -14,12 +14,12 @@ export WANDB_API_KEY=${WANDB_API_KEY}
 export NUM_ACTOR_NODES=${NUM_ACTOR_NODES}
 export TARGET_NODES=${TARGET_NODES}
 
-JOB_NAME="grpo-multiple-node-${NUM_ACTOR_NODES}"
+JOB_NAME="grpo-nodes-${NUM_ACTOR_NODES}"
 
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
 mkdir -p $HF_CACHE_DIR
-MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR"
+MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
@@ -27,7 +27,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
-    checkpointing.checkpoint_dir='results/llama8b_${NUM_ACTOR_NODES}nodes' \
+    checkpointing.checkpoint_dir='results/${JOB_NAME}' \
     policy.precision="bfloat16" \
     logger.wandb_enabled=True \
     logger.wandb.name='${JOB_NAME}'"
