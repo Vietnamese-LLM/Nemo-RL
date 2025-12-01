@@ -26,6 +26,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
     uv run python examples/run_dpo.py \
     policy.model_name="meta-llama/Llama-3.1-8B-Instruct" \
+    policy.precision="bfloat16" \
     policy.train_global_batch_size=256 \
     cluster.gpus_per_node=8 \
     logger.wandb_enabled=True \

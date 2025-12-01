@@ -28,6 +28,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
     checkpointing.checkpoint_dir='results/llama8b_${NUM_ACTOR_NODES}nodes' \
+    policy.precision="bfloat16" \
     logger.wandb_enabled=True \
     logger.wandb.name='${JOB_NAME}'"
 
