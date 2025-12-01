@@ -23,12 +23,13 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
-    uv run python examples/run_dpo.py \
-    policy.model_name="meta-llama/Llama-3.1-8B-Instruct" \
-    policy.precision="bfloat16" \
-    policy.train_global_batch_size=256 \
-    checkpointing.checkpoint_dir='results/${JOB_NAME}' \
+    uv run ./examples/run_dpo.py 
+    --config examples/configs/dpo.yaml 
+    cluster.num_nodes=${NUM_ACTOR_NODES} \
     cluster.gpus_per_node=8 \
+    policy.precision="bfloat16" \
+    dpo.val_global_batch_size=32 \
+    checkpointing.checkpoint_dir='results/${JOB_NAME}' \
     logger.wandb_enabled=True \
     logger.wandb.name='${JOB_NAME}'"
 
