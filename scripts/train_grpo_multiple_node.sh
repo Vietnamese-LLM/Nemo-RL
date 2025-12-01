@@ -31,6 +31,12 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export NCCL_NET_GDR_LEVEL=5 && \
     export NCCL_IB_TIMEOUT=22 && \
     export NCCL_IB_RETRY_CNT=7 && \
+    export NCCL_ALGO=Ring && \
+    export NCCL_MIN_NCHANNELS=8 && \
+    export NCCL_MAX_NCHANNELS=32 && \
+    export NCCL_IB_QPS_PER_CONNECTION=4 && \
+    export NCCL_NSOCKS_PERTHREAD=8 && \
+    export NCCL_SOCKET_NTHREADS=8 && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
