@@ -24,6 +24,9 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
+    export NCCL_SOCKET_IFNAME=ib && \
+    export NCCL_IB_HCA=mlx5 && \
+    export NCCL_DEBUG=INFO && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
