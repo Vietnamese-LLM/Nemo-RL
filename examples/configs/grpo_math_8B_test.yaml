@@ -2,8 +2,8 @@
 defaults: "grpo_math_1B.yaml"
 
 grpo:
-  num_prompts_per_step: 64
-  num_generations_per_prompt: 32
+  num_prompts_per_step: 128
+  num_generations_per_prompt: 64
   async_grpo:
     enabled: false
     max_trajectory_age_steps: 1
@@ -59,7 +59,7 @@ policy:
     stop_strings: null
     vllm_cfg:
       tensor_parallel_size: 1
-      gpu_memory_utilization: 0.6
+      gpu_memory_utilization: 0.7
       max_model_len: ${policy.max_total_sequence_length}
       enforce_eager: False
 
