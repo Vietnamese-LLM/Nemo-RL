@@ -27,6 +27,8 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export NCCL_SOCKET_IFNAME=ib && \
     export NCCL_IB_HCA=mlx5 && \
     export NCCL_DEBUG=INFO && \
+    export VLLM_NCCL_SO_PATH="" && \
+    export NCCL_IB_DISABLE=0 && \
 	uv run ./examples/run_grpo_math.py \
     --config examples/configs/grpo_math_8B_test.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
