@@ -23,8 +23,8 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 # === 4. Command ===
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
-    uv run ./examples/run_dpo.py 
-    --config examples/configs/dpo.yaml 
+    uv run examples/run_dpo.py \
+    --config examples/configs/dpo.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
     cluster.gpus_per_node=8 \
     policy.precision="bfloat16" \
