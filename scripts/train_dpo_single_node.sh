@@ -12,6 +12,7 @@ CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
 export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
 export NUM_ACTOR_NODES=${NUM_ACTOR_NODES}
+export MODEL_NAME=${MODEL_NAME}
 export TARGET_NODES=${TARGET_NODES}
 export JOB_NAME="dpo-nodes-${NUM_ACTOR_NODES}"
 
@@ -24,7 +25,7 @@ MOUNTS="$PWD:$PWD,$HF_CACHE_DIR:$HF_CACHE_DIR,/dev/infiniband:/dev/infiniband"
 COMMAND="export HF_TOKEN=$HF_TOKEN && \
     export WANDB_API_KEY=$WANDB_API_KEY && \
     uv run python examples/run_dpo.py \
-    policy.model_name="meta-llama/Llama-3.1-8B-Instruct" \
+    policy.model_name='${MODEL_NAME}' \
     policy.train_global_batch_size=256 \
     policy.precision="bfloat16" \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
