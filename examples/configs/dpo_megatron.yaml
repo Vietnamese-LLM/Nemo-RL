@@ -31,17 +31,17 @@ checkpointing:
 policy:
   # model_name: "meta-llama/Llama-3.2-1B-Instruct"
   pretrained_checkpoint:
-    path: "/root/users/khoilm6/megatron-bridge/nemo_experiments/qwen3_32b_saola_full/checkpoints/iter_0005000/"
+    path: "./nemo_experiments/qwen3_32b_saola_full/checkpoints/iter_0005000/"
 
   tokenizer:
-    name: "/root/users/khoilm6/megatron-bridge/nemo_experiments/qwen3_32b_saola_full/checkpoints/iter_0005000/tokenizer"
+    name: "./nemo_experiments/qwen3_32b_saola_full/checkpoints/iter_0005000/tokenizer"
     chat_template_kwargs: null # can be used to pass kwargs to the chat template, e.g., enable_thinking=true
 
   # number of preference samples per batch
   # each preference sample corresponds to a pair of chosen and rejected responses
   # so the actual batch size processed by the model is train_global_batch_size * 2
-  train_global_batch_size: 128
-  train_micro_batch_size: 2
+  train_global_batch_size: 64
+  train_micro_batch_size: 4
 
   ## TODO(@ashors) support
   #logprob_batch_size: ${policy.train_micro_batch_size}
@@ -57,7 +57,7 @@ policy:
     cpu_offload: False
     sequence_parallel: false
     activation_checkpointing: false
-    tensor_parallel_size: 1
+    tensor_parallel_size: 4
     context_parallel_size: 1
     custom_parallel_plan: null
     clear_cache_every_n_steps: null
@@ -102,7 +102,7 @@ policy:
     enabled: true
     empty_unused_memory_level: 1
     activation_checkpointing: false
-    tensor_model_parallel_size: 2
+    tensor_model_parallel_size: 4
     expert_tensor_parallel_size: 1
     expert_model_parallel_size: 1
     pipeline_model_parallel_size: 1
@@ -219,5 +219,5 @@ logger:
     flush_interval: 10  # How often to flush GPU usage metrics to the loggers (in seconds)
 
 cluster:
-  gpus_per_node: 1
+  gpus_per_node: 8
   num_nodes: 1
