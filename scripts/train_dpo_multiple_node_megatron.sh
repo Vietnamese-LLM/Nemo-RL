@@ -26,7 +26,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     uv run examples/run_dpo.py \
     --config examples/configs/dpo_megatron.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
-    cluster.gpus_per_node=8 \
+    cluster.gpus_per_node=6 \
     policy.precision="bfloat16" \
     dpo.val_global_batch_size=32 \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
