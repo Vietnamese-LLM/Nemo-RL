@@ -26,7 +26,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     uv run examples/run_dpo.py \
     --config examples/configs/dpo_megatron.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
-    cluster.gpus_per_node=6 \
+    cluster.gpus_per_node=8 \
     policy.precision="bfloat16" \
     dpo.val_global_batch_size=32 \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
@@ -43,9 +43,9 @@ sbatch \
         --account=${SLURM_ACCOUNT} \
         --job-name=${JOB_NAME} \
         --partition=${SLURM_PARTITION} \
-        # --exclusive \
-        --mem=320GB \
-        --time=2:0:0 \
-        --gres=gpu:6 \
+        --exclusive \
+        --mem=0 \
+        --time=1:0:0 \
+        --gres=gpu:8 \
         --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
         ray.sub
