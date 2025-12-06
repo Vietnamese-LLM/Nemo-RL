@@ -43,9 +43,9 @@ sbatch \
         --account=${SLURM_ACCOUNT} \
         --job-name=${JOB_NAME} \
         --partition=${SLURM_PARTITION} \
-        --exclusive \
-        --mem=0 \
-        --time=1:0:0 \
-        --gres=gpu:8 \
+        # --exclusive \
+        --mem=320GB \
+        --time=2:0:0 \
+        --gres=gpu:6 \
         --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
         ray.sub
