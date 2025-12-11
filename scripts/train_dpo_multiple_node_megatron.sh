@@ -6,7 +6,8 @@ set -eoux pipefail
 # === 1. Slurm Parameters ===
 SLURM_ACCOUNT="root"
 SLURM_PARTITION="main"
-CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
+# CONTAINER_IMAGE="docker://ghcr.io/elfsong/nemo-rl:latest"
+CONTAINER_IMAGE="./docker/elfsong+nemo-rl+latest.sqsh"
 
 # === 2. Environment Variables ===
 export HF_TOKEN=${HF_TOKEN}
@@ -26,7 +27,7 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     uv run examples/run_dpo.py \
     --config examples/configs/dpo_megatron.yaml \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
-    cluster.gpus_per_node=6 \
+    cluster.gpus_per_node=8 \
     policy.precision="bfloat16" \
     dpo.val_global_batch_size=32 \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
@@ -38,14 +39,14 @@ echo "Job Name: ${JOB_NAME}"
 
 # === 5. Submit ===
 sbatch \
-        --nodelist=${TARGET_NODES} \
-        --nodes=${NUM_ACTOR_NODES} \
-        --account=${SLURM_ACCOUNT} \
-        --job-name=${JOB_NAME} \
-        --partition=${SLURM_PARTITION} \
-        # --exclusive \
-        --mem=320GB \
-        --time=2:0:0 \
-        --gres=gpu:6 \
-        --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
-        ray.sub
+    --nodelist=${TARGET_NODES} \
+    --nodes=${NUM_ACTOR_NODES} \
+    --account=${SLURM_ACCOUNT} \
+    --job-name=${JOB_NAME} \
+    --partition=${SLURM_PARTITION} \
+    --exclusive \
+    --mem=0 \
+    --time=4:0:0 \
+    --gres=gpu:8 \
+    --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
+    ray.sub
