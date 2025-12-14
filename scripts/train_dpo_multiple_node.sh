@@ -14,7 +14,7 @@ export HF_TOKEN=${HF_TOKEN}
 export WANDB_API_KEY=${WANDB_API_KEY}
 export NUM_ACTOR_NODES=${NUM_ACTOR_NODES}
 export TARGET_NODES=${TARGET_NODES}
-export JOB_NAME="dpo-nodes-${NUM_ACTOR_NODES}-test"
+export JOB_NAME="dpo-nodes-${NUM_ACTOR_NODES}-qwen3-32b"
 
 # === 3. Mount Disk ===
 HF_CACHE_DIR="$HOME/.cache/huggingface"
@@ -29,6 +29,10 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     cluster.num_nodes=${NUM_ACTOR_NODES} \
     cluster.gpus_per_node=8 \
     policy.precision="bfloat16" \
+    policy.dtensor_cfg.tensor_parallel_size=8 \
+    policy.dtensor_cfg.activation_checkpointing=true \
+    policy.train_micro_batch_size=1 \
+    policy.max_total_sequence_length=8192 \
     dpo.val_global_batch_size=32 \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
     logger.wandb_enabled=True \

@@ -172,6 +172,11 @@ class DTensorPolicyWorkerV2:
 
         hf_config_overrides = self.cfg.get("hf_config_overrides", {}) or {}
 
+        # Check if model_name is a local path to avoid HFValidationError
+        # Convert to absolute path to ensure transformers recognizes it as local
+        if os.path.exists(model_name) and os.path.isdir(model_name):
+            model_name = os.path.abspath(model_name)
+
         model_config = AutoConfig.from_pretrained(
             model_name,
             # Always load the model in float32 to keep master weights in float32.
@@ -225,8 +230,13 @@ class DTensorPolicyWorkerV2:
         model_state_dict_keys = None
         if self.rank == 0:
             print(f"[Rank {self.rank}] Loading model {model_name} on CPU...")
+            # Ensure model_name is absolute path if it's a local path
+            model_path = model_name
+            if os.path.exists(model_name) and os.path.isdir(model_name):
+                model_path = os.path.abspath(model_name)
+            
             model = model_class.from_pretrained(
-                model_name,
+                model_path,
                 device_map="cpu",  # load weights onto CPU initially
                 trust_remote_code=True,
                 config=model_config,

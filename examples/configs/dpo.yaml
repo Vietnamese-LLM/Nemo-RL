@@ -29,20 +29,22 @@ checkpointing:
   checkpoint_must_save_by: null
 
 policy:
-  model_name: "Qwen/Qwen3-32B"
+  # model_name: "Qwen/Qwen3-32B"
+  model_name: "/home/mingzhe/Nemo-RL/results/Qwen3-32B/base"
   tokenizer:
-    name: "Qwen/Qwen3-32B"
+    # name: "Qwen/Qwen3-32B"
+    name: "/home/mingzhe/Nemo-RL/results/Qwen3-32B/base"
     chat_template_kwargs: null # can be used to pass kwargs to the chat template, e.g., enable_thinking=true
 
   # number of preference samples per batch
   # each preference sample corresponds to a pair of chosen and rejected responses
   # so the actual batch size processed by the model is train_global_batch_size * 2
   train_global_batch_size: 128
-  train_micro_batch_size: 1
+  train_micro_batch_size: 4
 
   ## TODO(@ashors) support
   #logprob_batch_size: ${policy.train_micro_batch_size}
-  max_total_sequence_length: 2048
+  max_total_sequence_length: 8192
   precision: "bfloat16"
 
   offload_optimizer_for_logprob: false
@@ -217,4 +219,4 @@ logger:
 
 cluster:
   gpus_per_node: 8
-  num_nodes: 2
+  num_nodes: 4
