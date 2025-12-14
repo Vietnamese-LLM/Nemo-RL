@@ -41,6 +41,10 @@ export TARGET_NODES="<node_list>"
 bash scripts/train_dpo_multiple_node.sh
 # For GRPO multiple nodes training
 bash scripts/train_grpo_multiple_node.sh
+
+# To modify the training config, please refer to the following files:
+# - examples/configs/dpo.yaml
+# - examples/configs/grpo.yaml
 ```
 
 ## Step 3: Evaluation
