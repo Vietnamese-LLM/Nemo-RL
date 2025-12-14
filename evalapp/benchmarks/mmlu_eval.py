@@ -1,11 +1,11 @@
 # mmlu_eval.py (phần liên quan đến MMLU eval)
 
 import math
+import torch
 from tqdm import tqdm
+from datasets import load_dataset
 from typing import Dict, List, Optional, Tuple
 
-import torch
-from datasets import load_dataset
 
 CHOICE_LETTERS = ["A", "B", "C", "D"]
 
@@ -233,7 +233,7 @@ def run_mmlu_eval(
     total_correct = 0
     total_count = 0
 
-    for subject in subjects:
+    for subject in tqdm(subjects, desc="[MMLU] Evaluating subjects"):
         ds = load_mmlu_subject(subject, split=split)
 
         if max_samples_per_subject is not None and max_samples_per_subject > 0:

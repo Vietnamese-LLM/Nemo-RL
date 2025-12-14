@@ -25,7 +25,7 @@ checkpointing:
   metric_name: "val:validation-default_loss"
   higher_is_better: false
   keep_top_k: 3
-  save_period: 20
+  save_period: 100
   checkpoint_must_save_by: null
 
 policy:

@@ -284,32 +284,38 @@ def convert_dcp_to_safetensors(
     Returns:
         str: Path to the saved Safetensors checkpoint
     """
+    # Check if HF checkpoint already exists
+    print(f"[0/6] Checking if HF checkpoint already exists at {hf_ckpt_path}...")
     if os.path.exists(hf_ckpt_path) and not overwrite:
         raise FileExistsError(
             f"HF checkpoint already exists at {hf_ckpt_path}. Delete it to run or set overwrite=True."
         )
     os.makedirs(hf_ckpt_path, exist_ok=True)
 
-    # Define temporary and final weights paths
-    temp_weights_path = os.path.join(hf_ckpt_path, "pytorch_model.bin")
-    final_weights_path = os.path.join(hf_ckpt_path, "model.safetensors")
+    # Save config
+    print(f"[1/6] Saving model config...")
+    config = AutoConfig.from_pretrained(model_name_or_path, trust_remote_code=True, **hf_overrides)
+    config.save_pretrained(hf_ckpt_path)
+
+    # Save tokenizer
+    print(f"[2/6] Saving model tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path, trust_remote_code=True
+    )
+    tokenizer.save_pretrained(hf_ckpt_path)
 
     # Convert DCP to temporary binary file
-    print(f"Converting DCP to temporary binary file: {temp_weights_path}...")
+    temp_weights_path = os.path.join(hf_ckpt_path, "pytorch_model.bin")
+    print(f"[3/6] Converting DCP to temporary binary file: {temp_weights_path}...")
     dcp_to_torch_save(dcp_ckpt_path, temp_weights_path)
 
     # Load weights to state dict
-    print("Loading weights to convert to safetensors...")
+    print("[4/6] Loading weights to state dict...")
     state_dict = torch.load(temp_weights_path, map_location="cpu") # add map_location="cpu" to save memory
     assert set(state_dict.keys()) == {"model"}, (f"We expect that the state dict only has the top level model key, but found: {state_dict.keys()}")
 
-    # Save config
-    config = AutoConfig.from_pretrained(
-        model_name_or_path, trust_remote_code=True, **hf_overrides
-    )
-    config.save_pretrained(hf_ckpt_path)
-
     # Load model to CPU to save memory
+    print("[5/6] Loading weights to convert to safetensors...")
     with torch.device("cpu"):
         hf_model = AutoModelForCausalLM.from_config(config)
         hf_model.load_state_dict(state_dict["model"], strict=True)
@@ -320,19 +326,9 @@ def convert_dcp_to_safetensors(
         )
     
     # Remove temporary binary file
+    print("[6/6] Removing temporary binary file...")
     if os.path.exists(temp_weights_path):
         os.remove(temp_weights_path)
         print("Removed temporary binary file.")
-
-    # TODO: After the following PR gets merged:
-    # https://github.com/NVIDIA-NeMo/RL/pull/148/files
-    # tokenizer should be copied from policy/tokenizer/* instead of relying on the model name
-    # We can expose a arg at the top level --tokenizer_path to plumb that through.
-    # This is more stable than relying on the current NeMo-RL get_tokenizer() which can
-    # change release to release.
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_name_or_path, trust_remote_code=True
-    )
-    tokenizer.save_pretrained(hf_ckpt_path)
 
     return hf_ckpt_path

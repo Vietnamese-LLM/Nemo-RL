@@ -50,7 +50,7 @@ bash scripts/train_grpo_multiple_node.sh
 ## Step 3: Evaluation
 
 ```bash
-srun --gres=gpu:8 --time=04:00:00 --mem=256G --pty bash -i
+srun --gres=gpu:8 -c 32 --time=04:00:00 --mem=256G --pty bash -i
 
 CHECKPOINT_PATH='<your_checkpoint_path>'
 
