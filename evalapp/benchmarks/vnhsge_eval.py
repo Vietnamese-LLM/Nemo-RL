@@ -148,19 +148,103 @@ def compute_logprob_for_choice(
     return float(token_logprobs.item())
 
 
+@torch.no_grad()
+def compute_logprobs_for_all_choices_batched(
+    model,
+    tokenizer,
+    prompt: str,
+    max_tokens: int = 512,
+) -> List[float]:
+    """
+    Tính log P(choice_letter | prompt) cho TẤT CẢ choices trong một forward pass.
+    Optimization để tăng tốc inference.
+    
+    Returns: list of logprobs [logprob_A, logprob_B, logprob_C, logprob_D]
+    """
+    device = next(model.parameters()).device
+    
+    # Tokenize prompt once
+    prompt_enc = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=max_tokens - 10,
+    )
+    
+    # Tokenize all answer letters
+    choice_token_ids = []
+    choice_lengths = []
+    
+    for letter in CHOICE_LETTERS:
+        ans_ids = tokenizer(letter, add_special_tokens=False)["input_ids"]
+        choice_token_ids.append(ans_ids)
+        choice_lengths.append(len(ans_ids))
+    
+    # Create batched input
+    batched_texts = [prompt + " " + letter for letter in CHOICE_LETTERS]
+    
+    # Tokenize all together with padding
+    batched_enc = tokenizer(
+        batched_texts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=max_tokens,
+    )
+    batched_input_ids = batched_enc["input_ids"].to(device)
+    attention_mask = batched_enc["attention_mask"].to(device)
+    
+    # Forward pass for all choices at once
+    outputs = model(batched_input_ids, attention_mask=attention_mask)
+    logits = outputs.logits
+    
+    # Extract logprobs for each choice
+    scores = []
+    for i, letter in enumerate(CHOICE_LETTERS):
+        seq_len = batched_input_ids[i].size(0)
+        ans_len = choice_lengths[i]
+        
+        start = seq_len - ans_len
+        if start < 0:
+            scores.append(float("-inf"))
+            continue
+            
+        logits_ans = logits[i, start - 1 : seq_len - 1, :]
+        log_probs = torch.log_softmax(logits_ans, dim=-1)
+        
+        ans_tensor = torch.tensor(choice_token_ids[i], dtype=torch.long, device=device)
+        ans_tensor = ans_tensor.view(ans_len, 1)
+        
+        token_logprobs = log_probs.gather(-1, ans_tensor).squeeze(-1)
+        total_logprob = token_logprobs.sum().item()
+        scores.append(total_logprob)
+    
+    return scores
+
+
 def predict_vnhsge_single(
     model,
     tokenizer,
     question_text: str,
+    use_batching: bool = True,
 ) -> str:
     """
     Trả về chữ cái đáp án dự đoán ("A"/"B"/"C"/"D").
+    
+    Args:
+        use_batching: If True, compute all choices in one forward pass (faster).
     """
     prompt = format_vnhsge_prompt(question_text)
-    scores = []
-    for letter in CHOICE_LETTERS:
-        lp = compute_logprob_for_choice(model, tokenizer, prompt, letter)
-        scores.append(lp)
+    
+    if use_batching:
+        # Optimized: compute all choices in one forward pass
+        scores = compute_logprobs_for_all_choices_batched(model, tokenizer, prompt)
+    else:
+        # Original: compute each choice separately
+        scores = []
+        for letter in CHOICE_LETTERS:
+            lp = compute_logprob_for_choice(model, tokenizer, prompt, letter)
+            scores.append(lp)
 
     scores_t = torch.tensor(scores)
     idx = int(scores_t.argmax().item())

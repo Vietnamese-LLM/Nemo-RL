@@ -20,7 +20,7 @@ YÊU CẦU:
 """
 
 import math
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 import requests
 import torch
 from datasets import load_dataset
@@ -111,11 +111,77 @@ def generate_vietnews_summary(
         temperature=1.0,
         top_p=1.0,
         eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        use_cache=True,  # Enable KV cache for faster generation
+        pad_token_id=getattr(tokenizer, "pad_token_id", getattr(tokenizer, "eos_token_id", None)),
     )
 
     gen_ids = output_ids[0, input_ids.size(1):]
     ans = tokenizer.decode(gen_ids, skip_special_tokens=True)
     return ans.strip()
+
+
+@torch.no_grad()
+def generate_vietnews_summaries_batched(
+    model,
+    tokenizer,
+    articles: List[str],
+    max_new_tokens: int = 128,
+    batch_size: int = 4,
+) -> List[str]:
+    """
+    Sinh summaries cho nhiều articles cùng lúc (batching).
+    Optimization để tăng tốc inference.
+    
+    Args:
+        articles: List of article strings
+        max_new_tokens: Maximum tokens to generate
+        batch_size: Number of samples to process in parallel
+    
+    Returns:
+        List of generated summaries
+    """
+    device = next(model.parameters()).device
+    all_summaries = []
+    
+    # Process in batches
+    for i in range(0, len(articles), batch_size):
+        batch_articles = articles[i:i + batch_size]
+        
+        # Format prompts for batch
+        batch_prompts = [format_vietnews_prompt(article) for article in batch_articles]
+        
+        # Tokenize batch with padding
+        enc = tokenizer(
+            batch_prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=2048,
+        )
+        input_ids = enc["input_ids"].to(device)
+        attention_mask = enc["attention_mask"].to(device)
+        
+        # Generate for batch
+        output_ids = model.generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            temperature=1.0,
+            top_p=1.0,
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+            use_cache=True,  # Enable KV cache
+            pad_token_id=getattr(tokenizer, "pad_token_id", getattr(tokenizer, "eos_token_id", None)),
+        )
+        
+        # Decode each summary
+        input_lengths = attention_mask.sum(dim=1)
+        for j in range(len(batch_prompts)):
+            gen_ids = output_ids[j, input_lengths[j]:]
+            summary = tokenizer.decode(gen_ids, skip_special_tokens=True)
+            all_summaries.append(summary.strip())
+    
+    return all_summaries
 
 
 # =========================================================
@@ -240,9 +306,15 @@ def run_vietnews_summarization_eval(
     judge_base_url: str = "http://localhost:8000/v1",
     judge_api_key: str = "token-abc123",
     judge_model: str = "Qwen2.5-7B-Instruct",
+    batch_size: int = 4,
+    use_batching: bool = True,
 ) -> Tuple[Dict[str, float], Dict[str, int]]:
     """
     Evaluate summarization model using LLM-as-a-judge on VietNews.
+
+    Args:
+        batch_size: Number of samples to process in parallel (if use_batching=True)
+        use_batching: If True, generate summaries in batches for faster inference
 
     Trả về:
         metrics = {"overall_judge_score": avg_score}
@@ -253,20 +325,40 @@ def run_vietnews_summarization_eval(
     if max_samples is not None and max_samples > 0:
         ds = ds[:max_samples]
 
+    articles = [item["article"] for item in ds]
+    gold_summaries = [item["abstract"] for item in ds]
+
+    # Generate summaries (batched or sequential)
+    if use_batching and len(articles) > 1:
+        pred_summaries = generate_vietnews_summaries_batched(
+            model,
+            tokenizer,
+            articles=articles,
+            max_new_tokens=max_new_tokens,
+            batch_size=batch_size,
+        )
+    else:
+        # Sequential generation (original method)
+        pred_summaries = []
+        for article in articles:
+            summary = generate_vietnews_summary(
+                model,
+                tokenizer,
+                article=article,
+                max_new_tokens=max_new_tokens,
+            )
+            pred_summaries.append(summary)
+
+    # Grade summaries with judge
     n_total = 0
     score_sum = 0.0
 
-    for item in tqdm(ds, desc=f"[VietNews-Judge] split={split}", leave=False):
-        article = item["article"]
-        gold_summary = item["abstract"]
-
-        pred_summary = generate_vietnews_summary(
-            model,
-            tokenizer,
-            article=article,
-            max_new_tokens=max_new_tokens,
-        )
-
+    for article, gold_summary, pred_summary in tqdm(
+        zip(articles, gold_summaries, pred_summaries),
+        desc=f"[VietNews-Judge] split={split}",
+        total=len(articles),
+        leave=False,
+    ):
         score = grade_vietnews_summary_with_judge(
             article=article,
             pred_summary=pred_summary,

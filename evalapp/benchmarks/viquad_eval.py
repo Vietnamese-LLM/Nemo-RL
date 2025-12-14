@@ -13,7 +13,7 @@ Metric:
 """
 
 import math
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 
 import json as pyjson
 import requests
@@ -91,11 +91,83 @@ def generate_viquad_answer(
         temperature=1.0,
         top_p=1.0,
         eos_token_id=getattr(tokenizer, "eos_token_id", None),
+        use_cache=True,  # Enable KV cache for faster generation
+        pad_token_id=getattr(tokenizer, "pad_token_id", getattr(tokenizer, "eos_token_id", None)),
     )
 
     gen_ids = output_ids[0, input_ids.size(1):]
     answer = tokenizer.decode(gen_ids, skip_special_tokens=True)
     return answer.strip()
+
+
+@torch.no_grad()
+def generate_viquad_answers_batched(
+    model,
+    tokenizer,
+    contexts: List[str],
+    questions: List[str],
+    max_new_tokens: int = 64,
+    batch_size: int = 8,
+) -> List[str]:
+    """
+    Sinh câu trả lời cho nhiều câu hỏi cùng lúc (batching).
+    Đây là optimization quan trọng để tăng tốc inference.
+    
+    Args:
+        contexts: List of context strings
+        questions: List of question strings
+        max_new_tokens: Maximum tokens to generate
+        batch_size: Number of samples to process in parallel
+    
+    Returns:
+        List of generated answers
+    """
+    device = next(model.parameters()).device
+    all_answers = []
+    
+    # Process in batches
+    for i in range(0, len(contexts), batch_size):
+        batch_contexts = contexts[i:i + batch_size]
+        batch_questions = questions[i:i + batch_size]
+        
+        # Format prompts for batch
+        batch_prompts = [
+            format_viquad_prompt(ctx, q) 
+            for ctx, q in zip(batch_contexts, batch_questions)
+        ]
+        
+        # Tokenize batch with padding
+        enc = tokenizer(
+            batch_prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=1024,
+        )
+        input_ids = enc["input_ids"].to(device)
+        attention_mask = enc["attention_mask"].to(device)
+        
+        # Generate for batch
+        output_ids = model.generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            temperature=1.0,
+            top_p=1.0,
+            eos_token_id=getattr(tokenizer, "eos_token_id", None),
+            use_cache=True,  # Enable KV cache
+            pad_token_id=getattr(tokenizer, "pad_token_id", getattr(tokenizer, "eos_token_id", None)),
+        )
+        
+        # Decode each answer
+        input_lengths = attention_mask.sum(dim=1)
+        for j in range(len(batch_prompts)):
+            gen_ids = output_ids[j, input_lengths[j]:]
+            answer = tokenizer.decode(gen_ids, skip_special_tokens=True)
+            all_answers.append(answer.strip())
+    
+    return all_answers
 
 
 # =========================================================
@@ -243,6 +315,8 @@ def run_viquad_eval_with_judge(
     judge_base_url: str = "http://localhost:8000/v1",
     judge_api_key: str = "token-abc123",
     judge_model: str = "Qwen2.5-7B-Instruct",
+    batch_size: int = 8,
+    use_batching: bool = True,
 ) -> Tuple[Dict[str, float], Dict[str, int]]:
     """
     
@@ -250,6 +324,8 @@ def run_viquad_eval_with_judge(
 
     - model, tokenizer: model ứng viên để sinh câu trả lời (vd. Qwen3-4B).
     - judge_*: config cho Qwen2.5-7B deploy qua vLLM.
+    - batch_size: Number of samples to process in parallel (if use_batching=True)
+    - use_batching: If True, generate answers in batches for faster inference
 
     Trả về:
         metrics = {"overall_judge_score": avg_score}
@@ -260,30 +336,56 @@ def run_viquad_eval_with_judge(
     if max_samples is not None and max_samples > 0:
         ds = ds.select(range(min(max_samples, len(ds))))
 
+    # Filter out items without answers
+    valid_items = [
+        item for item in ds 
+        if item.get("answers") and item["answers"].get("text")
+    ]
+
+    if not valid_items:
+        return {"overall_judge_score": math.nan}, {"overall": 0}
+
+    contexts = [item["context"] for item in valid_items]
+    questions = [item["question"] for item in valid_items]
+    answers_list = [item["answers"] for item in valid_items]
+
+    # Generate answers (batched or sequential)
+    if use_batching and len(valid_items) > 1:
+        pred_answers = generate_viquad_answers_batched(
+            model,
+            tokenizer,
+            contexts=contexts,
+            questions=questions,
+            max_new_tokens=max_new_tokens,
+            batch_size=batch_size,
+        )
+    else:
+        # Sequential generation (original method)
+        pred_answers = []
+        for context, question in zip(contexts, questions):
+            answer = generate_viquad_answer(
+                model,
+                tokenizer,
+                context=context,
+                question=question,
+                max_new_tokens=max_new_tokens,
+            )
+            pred_answers.append(answer)
+
+    # Grade answers with judge
     n_total = 0
     score_sum = 0.0
 
-    for item in tqdm(ds, desc=f"[ViQuAD2-Judge] split={split}", leave=False):
-        context = item["context"]
-        question = item["question"]
-        answers = item["answers"]  # dict with "text" and "answer_start"
-
-        # bỏ các mẫu không có đáp án
-        if not answers or not answers.get("text"):
-            continue
-
-        pred_answer = generate_viquad_answer(
-            model,
-            tokenizer,
-            context=context,
-            question=question,
-            max_new_tokens=max_new_tokens,
-        )
-
+    for context, question, gold_answers, pred_answer in tqdm(
+        zip(contexts, questions, answers_list, pred_answers),
+        desc=f"[ViQuAD2-Judge] split={split}",
+        total=len(valid_items),
+        leave=False,
+    ):
         score = grade_viquad_answer_with_judge(
             context=context,
             question=question,
-            gold_answers=answers,
+            gold_answers=gold_answers,
             pred_answer=pred_answer,
             judge_base_url=judge_base_url,
             judge_api_key=judge_api_key,

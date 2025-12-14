@@ -142,11 +142,12 @@ def ui_run_single_mmlu():
             continue
         n = count_by_subject.get(subj, 0)
         lines.append(f"- **{subj}**: {acc:.4f} (n={n})")
-        print(f"- **{subj}**: {acc:.4f} (n={n})")
+
     lines.append("")
     lines.append(
         f"**Overall**: {acc_by_subject['overall']:.4f} (total n={count_by_subject['overall']})"
     )
+    print(lines)
     return "\n".join(lines)
 
 

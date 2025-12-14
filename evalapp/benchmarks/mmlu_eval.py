@@ -92,21 +92,114 @@ def compute_logprob_for_choice(
     return float(token_logprobs.item())
 
 
+@torch.no_grad()
+def compute_logprobs_for_all_choices_batched(
+    model,
+    tokenizer,
+    prompt: str,
+    choices: List[str],
+    max_tokens: int = 512,
+) -> List[float]:
+    """
+    Tính log P(choice_letter | prompt) cho TẤT CẢ choices trong một forward pass.
+    Đây là optimization quan trọng để tăng tốc inference.
+    
+    Returns: list of logprobs [logprob_A, logprob_B, logprob_C, logprob_D]
+    """
+    device = next(model.parameters()).device
+    
+    # Tokenize prompt once
+    prompt_enc = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=max_tokens - 10,  # Reserve space for answer tokens
+    )
+    prompt_ids = prompt_enc["input_ids"].to(device)  # [1, prompt_len]
+    prompt_len = prompt_ids.size(1)
+    
+    # Tokenize all answer letters
+    choice_letters = CHOICE_LETTERS[:len(choices)]
+    choice_token_ids = []
+    choice_lengths = []
+    
+    for letter in choice_letters:
+        ans_ids = tokenizer(letter, add_special_tokens=False)["input_ids"]
+        choice_token_ids.append(ans_ids)
+        choice_lengths.append(len(ans_ids))
+    
+    # Create batched input: [prompt + " " + choice_A, prompt + " " + choice_B, ...]
+    batched_texts = [prompt + " " + letter for letter in choice_letters]
+    
+    # Tokenize all together with padding
+    batched_enc = tokenizer(
+        batched_texts,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=max_tokens,
+    )
+    batched_input_ids = batched_enc["input_ids"].to(device)  # [num_choices, seq_len]
+    attention_mask = batched_enc["attention_mask"].to(device)
+    
+    # Forward pass for all choices at once
+    outputs = model(batched_input_ids, attention_mask=attention_mask)
+    logits = outputs.logits  # [num_choices, seq_len, vocab_size]
+    
+    # Extract logprobs for each choice
+    scores = []
+    for i, letter in enumerate(choice_letters):
+        seq_len = batched_input_ids[i].size(0)
+        ans_len = choice_lengths[i]
+        
+        # Find where answer tokens start (after prompt + space)
+        # The answer tokens are at the end
+        start = seq_len - ans_len
+        if start < 0:
+            scores.append(float("-inf"))
+            continue
+            
+        # Extract logits for answer tokens
+        logits_ans = logits[i, start - 1 : seq_len - 1, :]  # [ans_len, vocab_size]
+        log_probs = torch.log_softmax(logits_ans, dim=-1)
+        
+        # Gather logprobs for actual answer tokens
+        ans_tensor = torch.tensor(choice_token_ids[i], dtype=torch.long, device=device)
+        ans_tensor = ans_tensor.view(ans_len, 1)  # [ans_len, 1]
+        
+        token_logprobs = log_probs.gather(-1, ans_tensor).squeeze(-1)  # [ans_len]
+        total_logprob = token_logprobs.sum().item()
+        scores.append(total_logprob)
+    
+    return scores
+
+
 def predict_mmlu_single(
     model,
     tokenizer,
     question: str,
     choices: List[str],
+    use_batching: bool = True,
 ) -> int:
     """
     Trả về index (0..3) của đáp án được chọn.
+    
+    Args:
+        use_batching: If True, compute all choices in one forward pass (faster).
     """
     prompt = format_mmlu_prompt(question, choices)
-    scores = []
-    for i in range(len(choices)):
-        letter = CHOICE_LETTERS[i]
-        lp = compute_logprob_for_choice(model, tokenizer, prompt, letter)
-        scores.append(lp)
+    
+    if use_batching:
+        # Optimized: compute all choices in one forward pass
+        scores = compute_logprobs_for_all_choices_batched(model, tokenizer, prompt, choices)
+    else:
+        # Original: compute each choice separately
+        scores = []
+        for i in range(len(choices)):
+            letter = CHOICE_LETTERS[i]
+            lp = compute_logprob_for_choice(model, tokenizer, prompt, letter)
+            scores.append(lp)
+    
     scores_t = torch.tensor(scores)
     return int(scores_t.argmax().item())
 
