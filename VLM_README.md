@@ -50,11 +50,15 @@ bash scripts/train_grpo_multiple_node.sh
 ## Step 3: Evaluation
 
 ```bash
+srun --gres=gpu:8 --time=04:00:00 --mem=256G --pty bash -i
+
+CHECKPOINT_PATH='<your_checkpoint_path>'
+
 # 3.1 Convert the Model to Hugging Face Format
 uv run python examples/converters/convert_dcp_to_hf.py \
-    --config <your_checkpoint_path>/config.yaml \
-    --dcp-ckpt-path <your_checkpoint_path>/policy/weights/ \
-    --hf-ckpt-path <your_checkpoint_path>/hf
+    --config ${CHECKPOINT_PATH}/config.yaml \
+    --dcp-ckpt-path ${CHECKPOINT_PATH}/policy/weights/ \
+    --hf-ckpt-path ${CHECKPOINT_PATH}/hf
 
 # 3.2 Evaluate the Model via EvalApp
 python evalapp/main_app.py

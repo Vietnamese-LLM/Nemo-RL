@@ -30,9 +30,9 @@ COMMAND="export HF_TOKEN=$HF_TOKEN && \
     cluster.gpus_per_node=8 \
     policy.precision="bfloat16" \
     policy.dtensor_cfg.tensor_parallel_size=8 \
-    policy.dtensor_cfg.activation_checkpointing=true \
+    policy.dtensor_cfg.activation_checkpointing=false \
     policy.train_micro_batch_size=1 \
-    policy.max_total_sequence_length=8192 \
+    policy.max_total_sequence_length=4096 \
     dpo.val_global_batch_size=32 \
     checkpointing.checkpoint_dir='results/${JOB_NAME}' \
     logger.wandb_enabled=True \
@@ -50,7 +50,7 @@ sbatch \
         --partition=${SLURM_PARTITION} \
         --exclusive \
         --mem=0 \
-        --time=1:0:0 \
+        --time=6:0:0 \
         --gres=gpu:8 \
         --export=ALL,COMMAND="$COMMAND",CONTAINER="$CONTAINER_IMAGE",MOUNTS="$MOUNTS" \
         ray.sub

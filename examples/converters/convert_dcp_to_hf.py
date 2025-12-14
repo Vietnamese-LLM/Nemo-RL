@@ -16,7 +16,7 @@ import argparse
 
 import yaml
 
-from nemo_rl.utils.native_checkpoint import convert_dcp_to_hf
+from nemo_rl.utils.native_checkpoint import convert_dcp_to_hf, convert_dcp_to_safetensors
 
 
 def parse_args():
@@ -59,7 +59,7 @@ def main():
     tokenizer_name_or_path = config["policy"]["model_name"]
     hf_overrides = config["policy"].get("hf_overrides", {}) or {}
 
-    hf_ckpt = convert_dcp_to_hf(
+    hf_ckpt = convert_dcp_to_safetensors(
         dcp_ckpt_path=args.dcp_ckpt_path,
         hf_ckpt_path=args.hf_ckpt_path,
         model_name_or_path=model_name_or_path,
@@ -67,7 +67,6 @@ def main():
         hf_overrides=hf_overrides,
     )
     print(f"Saved HF checkpoint to: {hf_ckpt}")
-
 
 if __name__ == "__main__":
     main()

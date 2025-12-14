@@ -119,7 +119,7 @@ def ui_load_model(model_key: str, ckpt_folder: str):
 
 
 def ui_run_single_mmlu():
-    print("Running MMLU")
+    print("Running MMLU...")
     model, tokenizer = get_current_model_and_tokenizer()
     if model is None or tokenizer is None:
         return "❌ Please load a model first."
@@ -137,17 +137,17 @@ def ui_run_single_mmlu():
 
     lines = []
     lines.append("### MMLU Single-Checkpoint Results\n")
-    for subj, acc in tqdm(acc_by_subject.items()):
+    for subj, acc in acc_by_subject.items():
         if subj == "overall":
             continue
         n = count_by_subject.get(subj, 0)
         lines.append(f"- **{subj}**: {acc:.4f} (n={n})")
+        print(f"- **{subj}**: {acc:.4f} (n={n})")
 
     lines.append("")
     lines.append(
         f"**Overall**: {acc_by_subject['overall']:.4f} (total n={count_by_subject['overall']})"
     )
-    print(lines)
     return "\n".join(lines)
 
 
