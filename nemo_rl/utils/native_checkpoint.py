@@ -28,6 +28,7 @@ from torch.distributed.checkpoint.state_dict import (
 )
 from torch.distributed.checkpoint.stateful import Stateful
 from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoModelForCausalLM
 
 
 ## modified from pytorch tutorial https://pytorch.org/tutorials/recipes/distributed_checkpoint_recipe.html
@@ -263,5 +264,71 @@ def convert_dcp_to_hf(
         tokenizer_name_or_path, trust_remote_code=True
     )
     tokenizer.save_pretrained(hf_ckpt_path)
+
+    return hf_ckpt_path
+
+def convert_dcp_to_safetensors(
+    dcp_ckpt_path: str,
+    hf_ckpt_path: str,
+    model_name_or_path: str,
+    tokenizer_name_or_path: str,
+    overwrite: bool = False,
+    hf_overrides: Optional[dict[str, Any]] = {},
+) -> str:
+    """Convert a Torch DCP checkpoint to a Safetensors checkpoint.
+
+    Args:
+        dcp_ckpt_path (str): Path to DCP checkpoint
+        safetensors_ckpt_path (str): Path to save Safetensors checkpoint
+
+    Returns:
+        str: Path to the saved Safetensors checkpoint
+    """
+    # Check if HF checkpoint already exists
+    print(f"[0/6] Checking if HF checkpoint already exists at {hf_ckpt_path}...")
+    if os.path.exists(hf_ckpt_path) and not overwrite:
+        raise FileExistsError(
+            f"HF checkpoint already exists at {hf_ckpt_path}. Delete it to run or set overwrite=True."
+        )
+    os.makedirs(hf_ckpt_path, exist_ok=True)
+
+    # Save config
+    print(f"[1/6] Saving model config...")
+    config = AutoConfig.from_pretrained(model_name_or_path, trust_remote_code=True, **hf_overrides)
+    config.save_pretrained(hf_ckpt_path)
+
+    # Save tokenizer
+    print(f"[2/6] Saving model tokenizer...")
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path, trust_remote_code=True
+    )
+    tokenizer.save_pretrained(hf_ckpt_path)
+
+    # Convert DCP to temporary binary file
+    temp_weights_path = os.path.join(hf_ckpt_path, "pytorch_model.bin")
+    print(f"[3/6] Converting DCP to temporary binary file: {temp_weights_path}...")
+    dcp_to_torch_save(dcp_ckpt_path, temp_weights_path)
+
+    # Load weights to state dict
+    print("[4/6] Loading weights to state dict...")
+    state_dict = torch.load(temp_weights_path, map_location="cpu") # add map_location="cpu" to save memory
+    assert set(state_dict.keys()) == {"model"}, (f"We expect that the state dict only has the top level model key, but found: {state_dict.keys()}")
+
+    # Load model to CPU to save memory
+    print("[5/6] Loading weights to convert to safetensors...")
+    with torch.device("cpu"):
+        hf_model = AutoModelForCausalLM.from_config(config)
+        hf_model.load_state_dict(state_dict["model"], strict=True)
+        hf_model.save_pretrained(
+            hf_ckpt_path,
+            safe_serialization=True,  # enable safetensors format
+            max_shard_size="5GB"      # automatically shard if exceeds 5GB
+        )
+    
+    # Remove temporary binary file
+    print("[6/6] Removing temporary binary file...")
+    if os.path.exists(temp_weights_path):
+        os.remove(temp_weights_path)
+        print("Removed temporary binary file.")
 
     return hf_ckpt_path

@@ -33,8 +33,16 @@ def get_default_hf_config(model_name: str) -> PretrainedConfig:
     Both the DTensor and MCore paths use the same default config, we initialize the model config
     here to allow computation of theoretical flops which is agnostic to the backend.
     """
+    import os
+    
+    # Check if model_name is a local path to avoid HFValidationError
+    # Ensure local paths are recognized by converting to absolute path
+    config_path = model_name
+    if os.path.exists(model_name) and os.path.isdir(model_name):
+        config_path = os.path.abspath(model_name)
+    
     return AutoConfig.from_pretrained(
-        model_name,
+        config_path,
         torch_dtype=torch.float32,
         trust_remote_code=True,
     )

@@ -263,16 +263,24 @@ def get_tokenizer(
         >>>
         ```
     """
+    import os
+    
     processor = None
+    tokenizer_name = tokenizer_config["name"]
+    
+    # Check if tokenizer_name is a local path to avoid HFValidationError
+    # Ensure local paths are recognized by converting to absolute path
+    if os.path.exists(tokenizer_name) and os.path.isdir(tokenizer_name):
+        tokenizer_name = os.path.abspath(tokenizer_name)
 
     if get_processor:
         processor = AutoProcessor.from_pretrained(
-            tokenizer_config["name"], trust_remote_code=True, use_fast=True
+            tokenizer_name, trust_remote_code=True, use_fast=True
         )
         tokenizer = processor.tokenizer
     else:
         tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_config["name"], trust_remote_code=True
+            tokenizer_name, trust_remote_code=True
         )
 
     if tokenizer.pad_token is None:

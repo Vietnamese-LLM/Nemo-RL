@@ -16,7 +16,7 @@ import argparse
 
 import yaml
 
-from nemo_rl.utils.native_checkpoint import convert_dcp_to_hf
+from nemo_rl.utils.native_checkpoint import convert_dcp_to_hf, convert_dcp_to_safetensors
 
 
 def parse_args():
@@ -50,16 +50,10 @@ def main():
         config = yaml.safe_load(f)
 
     model_name_or_path = config["policy"]["model_name"]
-    # TODO: After the following PR gets merged:
-    # https://github.com/NVIDIA-NeMo/RL/pull/148/files
-    # tokenizer should be copied from policy/tokenizer/* instead of relying on the model name
-    # We can expose a arg at the top level --tokenizer_path to plumb that through.
-    # This is more stable than relying on the current NeMo-RL get_tokenizer() which can
-    # change release to release.
     tokenizer_name_or_path = config["policy"]["model_name"]
     hf_overrides = config["policy"].get("hf_overrides", {}) or {}
 
-    hf_ckpt = convert_dcp_to_hf(
+    hf_ckpt = convert_dcp_to_safetensors(
         dcp_ckpt_path=args.dcp_ckpt_path,
         hf_ckpt_path=args.hf_ckpt_path,
         model_name_or_path=model_name_or_path,
@@ -67,7 +61,6 @@ def main():
         hf_overrides=hf_overrides,
     )
     print(f"Saved HF checkpoint to: {hf_ckpt}")
-
 
 if __name__ == "__main__":
     main()
